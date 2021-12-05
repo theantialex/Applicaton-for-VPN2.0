@@ -109,6 +109,10 @@ func HandleConnTunEvent(ctx context.Context, tunIf *water.Interface, conn net.Co
 		fmt.Println("src: ", srcIP)
 		fmt.Println("dest: ", dstIP)
 
+		//conn, _ := net.Dial("tcp", "localhost:1234")
+
+		//_, err = conn.Write(packet.Data())
+
 		_, err = tunIf.Write(packet.Data())
 		if err != nil {
 			logger.Error("failed to write to tun", zap.Error(err))

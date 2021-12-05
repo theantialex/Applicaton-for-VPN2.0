@@ -140,7 +140,7 @@ func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
 
 	input := widget.NewEntry()
 	btn := widget.NewButton("Отправить", func() {
-		SendMessage(chat.Text, ip.Text, chat)
+		SendMessage(input.Text, ip.Text, chat)
 	})
 
 	go processChatResponces(chat)
@@ -155,25 +155,47 @@ func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
 }
 
 func SendMessage(msg string, addr string, chat *widget.Entry) {
-	out, err := exec.Command("sh", "-c", "echo "+msg+" | nc "+addr+" "+PORT+" &").Output()
-	fmt.Println(out, err)
+	err := exec.Command("sh", "send.sh", msg, addr, PORT)
+	fmt.Println(err)
 
 	chat.SetText(chat.Text + "\n" + msg)
 }
 
 func processChatResponces(chat *widget.Entry) {
-	file, _ := os.Create("output.txt")
-	err := exec.Command("sh", "-c", "nc -l -k "+PORT+" > output.txt &")
-	fmt.Println(err)
+	file, _ := os.Open("text.txt")
 
 	var bufPool = make([]byte, 1500)
 	for {
 		n, err := file.Read(bufPool)
+
 		if n < 1 || err != nil {
 			continue
 		}
 		chat.SetText(chat.Text + "\n" + string(bufPool))
 	}
+
+	/*listener, err := net.Listen("tcp", "localhost:1234")
+	fmt.Println(err)
+
+	for {
+		fmt.Println("here")
+		conn, err := listener.Accept()
+		fmt.Println("there")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		buf := make([]byte, 1024)
+		_, err = conn.Read(buf)
+
+		if err != nil {
+			fmt.Println("Error reading:", err.Error())
+		} else {
+			fmt.Println(string(buf))
+			chat.SetText(chat.Text + "\n" + string(buf))
+		}
+	}*/
+
 }
 
 func MainWindow(w fyne.Window) fyne.CanvasObject {
@@ -192,7 +214,15 @@ func MainWindow(w fyne.Window) fyne.CanvasObject {
 	return container
 }
 
+func RunScript() {
+	cmd := exec.Command("sh", "read.sh")
+	cmd.Start()
+}
+
 func main() {
+
+	RunScript()
+
 	a := app.New()
 	w := a.NewWindow("VPN 2.0")
 	w.Resize(fyne.NewSize(800, 500))
