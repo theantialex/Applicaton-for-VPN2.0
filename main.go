@@ -2,66 +2,84 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+	client "vpn2.0/app/client/cmd"
 )
 
-var authDB = map[string]string{"saxara": "1234"}
+var PORT = "1234"
 
-func LoginForm(w fyne.Window) fyne.CanvasObject {
-	label := widget.NewLabelWithStyle("Login", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+func CreateWindow(w fyne.Window) fyne.CanvasObject {
+	label := widget.NewLabelWithStyle("Создание защищенной сети", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
-	login := widget.NewEntry()
-	password := widget.NewPasswordEntry()
-
-	form := widget.NewForm(
-		widget.NewFormItem("Login", login),
-		widget.NewFormItem("Password", password),
-	)
-
-	btn := widget.NewButton("Submit", func() {
-		// fmt.Printf("%s %s\n", login.Text, password.Text)
-		if _, exist := authDB[login.Text]; exist {
-			w.SetContent(MainPage(w))
-		} else {
-			fmt.Printf("Error")
-		}
-	})
-
-	return container.NewVBox(
-		label,
-		layout.NewSpacer(),
-		form,
-		layout.NewSpacer(),
-		btn,
-		layout.NewSpacer(),
-	)
-}
-
-func RegistrationForm(w fyne.Window) fyne.CanvasObject {
-	label := widget.NewLabelWithStyle("Sign Up", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-
-	nickname := widget.NewEntry()
+	name := widget.NewEntry()
 	pass := widget.NewPasswordEntry()
-	repeated_pass := widget.NewPasswordEntry()
 
 	form := widget.NewForm(
-		widget.NewFormItem("Nickname", nickname),
-		widget.NewFormItem("Password", pass),
-		widget.NewFormItem("Repeat password", repeated_pass),
+		widget.NewFormItem("Название сети", name),
+		widget.NewFormItem("Пароль", pass),
 	)
 
-	btn := widget.NewButton("Submit", func() {
-		if _, exist := authDB[nickname.Text]; !exist && pass.Text == repeated_pass.Text {
-			authDB[nickname.Text] = pass.Text
-			w.SetContent(MainPage(w))
-		} else {
-			fmt.Printf("Error")
-		}
+	btnSubmit := widget.NewButton("Подтвердить", func() {
+		w.SetContent(Create(w, name.Text, pass.Text))
+	})
+
+	return container.NewVBox(
+		label,
+		layout.NewSpacer(),
+		form,
+		layout.NewSpacer(),
+		btnSubmit,
+		layout.NewSpacer(),
+	)
+}
+
+func Create(w fyne.Window, name string, pass string) fyne.CanvasObject {
+	manager, ctx := client.SetUpClient()
+
+	resp, _ := manager.MakeCreateRequest(ctx, name, pass)
+
+	var modal *widget.PopUp
+	var label *widget.Label
+
+	if strings.TrimRight(resp, "\n") == "network created successfully" {
+		label = widget.NewLabel("Сеть " + name + " успешно создана")
+	} else {
+		label = widget.NewLabel("Произошла ошибка. Попробуйте позже.")
+	}
+
+	modal = widget.NewModalPopUp(
+		container.NewVBox(
+			label,
+			widget.NewButton("Закрыть", func() { modal.Hide() }),
+		),
+		w.Canvas(),
+	)
+	modal.Show()
+
+	return MainWindow(w)
+}
+
+func ConnectWindow(w fyne.Window) fyne.CanvasObject {
+	label := widget.NewLabelWithStyle("Соединение с защищенной сетью", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+
+	name := widget.NewEntry()
+	pass := widget.NewPasswordEntry()
+
+	form := widget.NewForm(
+		widget.NewFormItem("Название сети", name),
+		widget.NewFormItem("Пароль", pass),
+	)
+
+	btn := widget.NewButton("Подтвердить", func() {
+		w.SetContent(Connect(w, name.Text, pass.Text))
 	})
 
 	return container.NewVBox(
@@ -74,30 +92,112 @@ func RegistrationForm(w fyne.Window) fyne.CanvasObject {
 	)
 }
 
-func MainPage(w fyne.Window) fyne.CanvasObject {
-	label := widget.NewLabel("Main page")
+func Connect(w fyne.Window, name string, pass string) fyne.CanvasObject {
+	manager, ctx := client.SetUpClient()
+
+	resp, _ := manager.MakeConnectRequest(ctx, name, pass)
+
+	var modal *widget.PopUp
+	var label *widget.Label
+
+	answer := strings.Split(resp, " ")
+
+	if answer[0] == "success" {
+		label = widget.NewLabel("Соединение с сетью " + name + " было успешно установлено")
+		modal = widget.NewModalPopUp(
+			container.NewVBox(
+				label,
+				widget.NewButton("Закрыть", func() { modal.Hide() }),
+			),
+			w.Canvas(),
+		)
+		modal.Show()
+		return ChatWindow(w, answer[1])
+
+	}
+
+	label = widget.NewLabel("Произошла ошибка. Попробуйте позже.")
+	modal = widget.NewModalPopUp(
+		container.NewVBox(
+			label,
+			widget.NewButton("Закрыть", func() { modal.Hide() }),
+		),
+		w.Canvas(),
+	)
+	modal.Show()
+	return MainWindow(w)
+}
+
+func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
+	label := widget.NewLabel("Ваш адрес в сети: " + addr)
+	chat := widget.NewMultiLineEntry()
+	chat.Disable()
+
+	ip := widget.NewEntry()
+	form := widget.NewForm(
+		widget.NewFormItem("IP пользователя", ip),
+	)
+
+	input := widget.NewEntry()
+	btn := widget.NewButton("Отправить", func() {
+		SendMessage(chat.Text, ip.Text, chat)
+	})
+
+	go processChatResponces(chat)
+
 	return container.NewVBox(
 		label,
+		form,
+		chat,
+		input,
+		btn,
 	)
+}
+
+func SendMessage(msg string, addr string, chat *widget.Entry) {
+	out, err := exec.Command("sh", "-c", "echo "+msg+" | nc "+addr+" "+PORT+" &").Output()
+	fmt.Println(out, err)
+
+	chat.SetText(chat.Text + "\n" + msg)
+}
+
+func processChatResponces(chat *widget.Entry) {
+	file, _ := os.Create("output.txt")
+	err := exec.Command("sh", "-c", "nc -l -k "+PORT+" > output.txt &")
+	fmt.Println(err)
+
+	var bufPool = make([]byte, 1500)
+	for {
+		n, err := file.Read(bufPool)
+		if n < 1 || err != nil {
+			continue
+		}
+		chat.SetText(chat.Text + "\n" + string(bufPool))
+	}
+}
+
+func MainWindow(w fyne.Window) fyne.CanvasObject {
+	label := widget.NewLabelWithStyle("Добро пожаловать в VPN 2.0!", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	container := container.NewVBox(
+		label,
+		layout.NewSpacer(),
+		widget.NewButton("Создать сеть", func() {
+			w.SetContent(CreateWindow(w))
+		}),
+		widget.NewButton("Соединиться с сетью", func() {
+			w.SetContent(ConnectWindow(w))
+		}),
+		layout.NewSpacer(),
+	)
+	return container
 }
 
 func main() {
 	a := app.New()
 	w := a.NewWindow("VPN 2.0")
-	w.Resize(fyne.NewSize(400, 250))
+	w.Resize(fyne.NewSize(800, 500))
 
-	label := widget.NewLabelWithStyle("Welcome to VPN 2.0!", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	container := container.NewVBox(
-		label,
-		layout.NewSpacer(),
-		widget.NewButton("Login", func() {
-			w.SetContent(LoginForm(w))
-		}),
-		widget.NewButton("Register", func() {
-			w.SetContent(RegistrationForm(w))
-		}),
-		layout.NewSpacer(),
-	)
+	container := MainWindow(w)
 	w.SetContent(container)
 
 	w.ShowAndRun()
