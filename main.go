@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	client "vpn2.0/app/client/cmd"
 	"vpn2.0/app/client/config"
+	"vpn2.0/app/ui"
 )
 
 func CreateWindow(w fyne.Window) fyne.CanvasObject {
@@ -110,7 +111,7 @@ func Connect(w fyne.Window, name string, pass string) fyne.CanvasObject {
 			w.Canvas(),
 		)
 		modal.Show()
-		return ChatWindow(w, answer[1])
+		return IPWindow(w, answer[1])
 
 	}
 
@@ -126,26 +127,43 @@ func Connect(w fyne.Window, name string, pass string) fyne.CanvasObject {
 	return MainWindow(w)
 }
 
-func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
-	label := widget.NewLabel("Ваш адрес в сети: " + addr)
-	chat := widget.NewMultiLineEntry()
-	chat.Disable()
-
+func IPWindow(w fyne.Window, addr string) fyne.CanvasObject {
+	label1 := widget.NewLabel("Ваш адрес в сети: " + addr)
+	label2 := widget.NewLabel("Введите ip адрес другого пользователя данной сети.")
 	ip := widget.NewEntry()
+
 	form := widget.NewForm(
 		widget.NewFormItem("IP пользователя", ip),
 	)
+	btn := widget.NewButton("Отправить", func() {
+		w.SetContent(ChatWindow(w, addr, ip.Text))
+	})
 
+	return container.NewVBox(
+		label1,
+		label2,
+		layout.NewSpacer(),
+		form,
+		layout.NewSpacer(),
+		btn,
+		layout.NewSpacer(),
+	)
+}
+
+func ChatWindow(w fyne.Window, addr string, ip string) fyne.CanvasObject {
+	label := widget.NewLabel("Ваш адрес в сети: " + addr)
+	chat := widget.NewMultiLineEntry()
+	//chat.Disable()
 	input := widget.NewEntry()
 	btn := widget.NewButton("Отправить", func() {
-		SendMessage(input.Text, ip.Text, chat)
+		SendMessage(input.Text, ip, chat)
 	})
 
 	go processChatResponces(chat)
 
-	return container.NewVBox(
+	return container.New(
+		&ui.ChatLayout{},
 		label,
-		form,
 		chat,
 		input,
 		btn,
@@ -155,7 +173,7 @@ func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
 func SendMessage(msg string, addr string, chat *widget.Entry) {
 	cmd := exec.Command("sh", "send.sh", msg, addr, config.PORT)
 	cmd.Start()
-	chat.SetText(chat.Text + "\n" + msg)
+	chat.SetText(chat.Text + "you: " + msg + "\n")
 }
 
 func processChatResponces(chat *widget.Entry) {
@@ -168,7 +186,7 @@ func processChatResponces(chat *widget.Entry) {
 		if n < 1 || err != nil {
 			continue
 		}
-		chat.SetText(chat.Text + "\n" + string(bufPool))
+		chat.SetText(chat.Text + "them: " + string(bufPool))
 	}
 
 }
@@ -200,7 +218,7 @@ func main() {
 
 	a := app.New()
 	w := a.NewWindow("VPN 2.0")
-	w.Resize(fyne.NewSize(800, 500))
+	w.Resize(fyne.NewSize(float32(ui.WIDTH), float32(ui.HEIGHT)))
 
 	container := MainWindow(w)
 	w.SetContent(container)
