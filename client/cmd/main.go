@@ -21,8 +21,6 @@ import (
 	"vpn2.0/app/lib/tun"
 )
 
-var ADDR = "192.168.1.101"
-
 func SetUpClient() (*Manager, context.Context) {
 	conf, err := config.New()
 	if err != nil {
@@ -40,7 +38,7 @@ func SetUpClient() (*Manager, context.Context) {
 func (c *Manager) MakeCreateRequest(ctx context.Context, name string, pass string) (string, error) {
 	logger := ctxmeta.GetLogger(ctx)
 
-	conn, err := net.Dial("tcp", ADDR+":"+c.Config.ServerPort)
+	conn, err := net.Dial("tcp", config.ADDR+":"+c.Config.ServerPort)
 	if err != nil {
 		logger.Error("failed to connect to server", zap.Error(err))
 		return "", err
@@ -66,7 +64,7 @@ func (c *Manager) MakeCreateRequest(ctx context.Context, name string, pass strin
 func (c *Manager) MakeConnectRequest(ctx context.Context, name string, pass string) (string, error) {
 	logger := ctxmeta.GetLogger(ctx)
 
-	conn, err := net.Dial("tcp", ADDR+":"+c.Config.ServerPort)
+	conn, err := net.Dial("tcp", config.ADDR+":"+c.Config.ServerPort)
 	if err != nil {
 		logger.Error("failed to connect to server", zap.Error(err))
 		return "", err

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,9 +11,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	client "vpn2.0/app/client/cmd"
+	"vpn2.0/app/client/config"
 )
-
-var PORT = "1234"
 
 func CreateWindow(w fyne.Window) fyne.CanvasObject {
 	label := widget.NewLabelWithStyle("Создание защищенной сети", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
@@ -155,9 +153,8 @@ func ChatWindow(w fyne.Window, addr string) fyne.CanvasObject {
 }
 
 func SendMessage(msg string, addr string, chat *widget.Entry) {
-	err := exec.Command("sh", "send.sh", msg, addr, PORT)
-	fmt.Println(err)
-
+	cmd := exec.Command("sh", "send.sh", msg, addr, config.PORT)
+	cmd.Start()
 	chat.SetText(chat.Text + "\n" + msg)
 }
 
@@ -173,28 +170,6 @@ func processChatResponces(chat *widget.Entry) {
 		}
 		chat.SetText(chat.Text + "\n" + string(bufPool))
 	}
-
-	/*listener, err := net.Listen("tcp", "localhost:1234")
-	fmt.Println(err)
-
-	for {
-		fmt.Println("here")
-		conn, err := listener.Accept()
-		fmt.Println("there")
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		buf := make([]byte, 1024)
-		_, err = conn.Read(buf)
-
-		if err != nil {
-			fmt.Println("Error reading:", err.Error())
-		} else {
-			fmt.Println(string(buf))
-			chat.SetText(chat.Text + "\n" + string(buf))
-		}
-	}*/
 
 }
 

@@ -4,6 +4,9 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+var PORT = "1234"
+var ADDR = "192.168.1.101"
+
 // Config struct describes a config entity
 type Config struct {
 	Debug      bool   `envconfig:"DEBUG" default:"true"`
