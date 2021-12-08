@@ -67,6 +67,7 @@ func (c *Manager) MakeConnectRequest(ctx context.Context, name string, pass stri
 		return "", err
 	}
 
+
 	go c.processConnectResponse(ctx, conn, resp, errCh)
 
 	return resp, nil
@@ -76,6 +77,11 @@ func (c *Manager) processConnectResponse(ctx context.Context, conn net.Conn, res
 	logger := ctxmeta.GetLogger(ctx)
 
 	resp := commands.GetWords(respStr)
+	if resp[0] != commands.SuccessResponse {
+		logger.Error("got error in server resp")
+		errCh <- errors.New(resp[0])
+		return
+	}
 
 	id, err := localnet.GetIDFromIp(ctx, resp[1])
 	if err != nil {
