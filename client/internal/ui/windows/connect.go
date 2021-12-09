@@ -1,11 +1,12 @@
 package windows
 
 import (
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"strings"
 
 	"vpn2.0/app/client/internal/client"
 )
@@ -55,7 +56,7 @@ func Connect(w fyne.Window, name string, pass string, errCh chan error) fyne.Can
 			w.Canvas(),
 		)
 		modal.Show()
-		return IPWindow(w, answer[1])
+		return IPWindow(w, answer[1], name, pass, errCh)
 
 	}
 
@@ -71,7 +72,7 @@ func Connect(w fyne.Window, name string, pass string, errCh chan error) fyne.Can
 	return MainWindow(w, errCh)
 }
 
-func IPWindow(w fyne.Window, addr string) fyne.CanvasObject {
+func IPWindow(w fyne.Window, addr string, name string, pass string, errCh chan error) fyne.CanvasObject {
 	label1 := widget.NewLabel("Ваш адрес в сети: " + addr)
 	label2 := widget.NewLabel("Введите ip адрес другого пользователя данной сети.")
 	ip := widget.NewEntry()
@@ -80,7 +81,7 @@ func IPWindow(w fyne.Window, addr string) fyne.CanvasObject {
 		widget.NewFormItem("IP пользователя", ip),
 	)
 	btn := widget.NewButton("Отправить", func() {
-		w.SetContent(ChatWindow(w, addr, ip.Text))
+		w.SetContent(ChatWindow(w, addr, ip.Text, name, pass, errCh))
 	})
 
 	return container.NewVBox(

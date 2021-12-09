@@ -18,6 +18,9 @@ func MainWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
 		widget.NewButton("Соединиться с сетью", func() {
 			w.SetContent(ConnectWindow(w, errCh))
 		}),
+		widget.NewButton("Удалить сеть", func() {
+			w.SetContent(DeleteWindow(w, errCh))
+		}),
 		layout.NewSpacer(),
 	)
 	return container

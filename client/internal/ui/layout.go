@@ -30,7 +30,7 @@ func (c *ChatLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size
 	pos = fyne.NewPos(0, size.Height)
 
 	chatBox := objects[1]
-	size = fyne.NewSize(containerSize.Width, 300)
+	size = fyne.NewSize(containerSize.Width, 250)
 	chatBox.Resize(size)
 	chatBox.Move(pos)
 
@@ -41,9 +41,15 @@ func (c *ChatLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size
 	input.Resize(size)
 	input.Move(pos)
 
-	pos = pos.Add(fyne.NewPos(0, size.Height+20))
+	pos = pos.Add(fyne.NewPos(0, size.Height+18))
 
-	btn := objects[3]
+	btnSend := objects[3]
+	btnSend.Resize(size)
+	btnSend.Move(pos)
+
+	pos = pos.Add(fyne.NewPos(0, size.Height+5))
+
+	btn := objects[4]
 	btn.Resize(size)
 	btn.Move(pos)
 }
