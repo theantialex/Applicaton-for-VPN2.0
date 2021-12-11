@@ -1,11 +1,9 @@
 package windows
 
 import (
+	"context"
 	"os"
 	"os/exec"
-	"strings"
-
-	"vpn2.0/app/client/internal/client"
 	"vpn2.0/app/client/internal/ui"
 
 	"fyne.io/fyne/v2"
@@ -15,7 +13,7 @@ import (
 	"vpn2.0/app/client/internal/config"
 )
 
-func ChatWindow(w fyne.Window, addr string, ip string, name string, pass string, errCh chan error) fyne.CanvasObject {
+func (ac *AppContainer) ChatWindow(ctx context.Context, addr string, ip string, name string, pass string, errCh chan error) fyne.CanvasObject {
 	label := widget.NewLabel("Ваш адрес в сети: " + addr)
 	chat := widget.NewMultiLineEntry()
 	//chat.Disable()
@@ -24,7 +22,7 @@ func ChatWindow(w fyne.Window, addr string, ip string, name string, pass string,
 		SendMessage(input.Text, ip, chat)
 	})
 	btn := widget.NewButton("Отключиться", func() {
-		w.SetContent(Disconnect(w, name, pass, errCh))
+		ac.window.SetContent(ac.Disconnect(ctx, name, pass, errCh))
 	})
 
 	go processChatResponses(chat)
@@ -58,30 +56,4 @@ func processChatResponses(chat *widget.Entry) {
 		chat.SetText(chat.Text + "them: " + string(bufPool))
 	}
 
-}
-
-func Disconnect(w fyne.Window, name string, pass string, errCh chan error) fyne.CanvasObject {
-	manager, ctx := client.SetUpClient()
-
-	resp, _ := manager.MakeLeaveRequest(ctx, name, pass)
-
-	var modal *widget.PopUp
-	var label *widget.Label
-
-	if strings.TrimRight(resp, "\n") == "network deleted successfully" {
-		label = widget.NewLabel("Вы успешно отключились от сети")
-	} else {
-		label = widget.NewLabel("Произошла ошибка. Попробуйте позже.")
-	}
-
-	modal = widget.NewModalPopUp(
-		container.NewVBox(
-			label,
-			widget.NewButton("Закрыть", func() { modal.Hide() }),
-		),
-		w.Canvas(),
-	)
-	modal.Show()
-
-	return MainWindow(w, errCh)
 }

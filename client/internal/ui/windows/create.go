@@ -1,15 +1,16 @@
 package windows
 
 import (
+	"context"
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"strings"
-	"vpn2.0/app/client/internal/client"
 )
 
-func CreateWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
+func (ac *AppContainer) CreateWindow(ctx context.Context, errCh chan error) fyne.CanvasObject {
 	label := widget.NewLabelWithStyle("Создание защищенной сети", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
 	name := widget.NewEntry()
@@ -21,7 +22,7 @@ func CreateWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
 	)
 
 	btnSubmit := widget.NewButton("Подтвердить", func() {
-		w.SetContent(Create(w, name.Text, pass.Text, errCh))
+		ac.window.SetContent(ac.Create(ctx, name.Text, pass.Text, errCh))
 	})
 
 	return container.NewVBox(
@@ -34,10 +35,8 @@ func CreateWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
 	)
 }
 
-func Create(w fyne.Window, name string, pass string, errCh chan error) fyne.CanvasObject {
-	manager, ctx := client.SetUpClient()
-
-	resp, _ := manager.MakeCreateRequest(ctx, name, pass)
+func (ac *AppContainer) Create(ctx context.Context, name string, pass string, errCh chan error) fyne.CanvasObject {
+	resp, _ := ac.clientManager.MakeCreateRequest(ctx, name, pass)
 
 	var modal *widget.PopUp
 	var label *widget.Label
@@ -53,10 +52,9 @@ func Create(w fyne.Window, name string, pass string, errCh chan error) fyne.Canv
 			label,
 			widget.NewButton("Закрыть", func() { modal.Hide() }),
 		),
-		w.Canvas(),
+		ac.window.Canvas(),
 	)
 	modal.Show()
 
-	return MainWindow(w, errCh)
+	return ac.MainWindow(ctx, errCh)
 }
-

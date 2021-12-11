@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"math/rand"
 	"net"
 	"sync"
+
+	"go.uber.org/zap"
 
 	"vpn2.0/app/client/internal/config"
 	"vpn2.0/app/client/internal/tun"
@@ -91,7 +91,7 @@ func (c *Manager) processConnectResponse(ctx context.Context, conn net.Conn, res
 
 	c.SetClientID(id)
 
-	tunName := tun.GetTunName("client", 1, 10+rand.Intn(191))
+	tunName := tun.GetTunName("client", 1, c.ID)
 	tunIf, err := tun.ConnectToTun(ctx, tunName)
 	if err != nil {
 		errCh <- err
@@ -167,7 +167,7 @@ func (c *Manager) MakeDeleteRequest(ctx context.Context, name string, pass strin
 		return "", err
 	}
 
-	msg := fmt.Sprintf("%s %s %s", commands.LeaveCmd, name, pass)
+	msg := fmt.Sprintf("%s %s %s", commands.DeleteCmd, name, pass)
 
 	_, err = conn.Write([]byte(msg + "\n"))
 	if err != nil {
@@ -188,12 +188,14 @@ func (c *Manager) MakeDeleteRequest(ctx context.Context, name string, pass strin
 		return "", nil
 	}
 
-	tunName := tun.GetTunName("client", 1, c.ID)
-	c.SetClientID(IDUndefined)
+	if c.ID != IDUndefined {
+		tunName := tun.GetTunName("client", 1, c.ID)
+		c.SetClientID(IDUndefined)
 
-	err = tun.SetTunDown(ctx, tunName)
-	if err != nil {
-		return "", err
+		err = tun.SetTunDown(ctx, tunName)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return resp, nil

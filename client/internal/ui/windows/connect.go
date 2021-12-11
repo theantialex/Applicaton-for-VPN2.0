@@ -1,17 +1,17 @@
 package windows
 
 import (
+	"context"
 	"strings"
+	"vpn2.0/app/lib/cmd"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-
-	"vpn2.0/app/client/internal/client"
 )
 
-func ConnectWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
+func (ac *AppContainer) ConnectWindow(ctx context.Context, errCh chan error) fyne.CanvasObject {
 	label := widget.NewLabelWithStyle("Соединение с защищенной сетью", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
 	name := widget.NewEntry()
@@ -23,7 +23,7 @@ func ConnectWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
 	)
 
 	btn := widget.NewButton("Подтвердить", func() {
-		w.SetContent(Connect(w, name.Text, pass.Text, errCh))
+		ac.window.SetContent(ac.Connect(ctx, name.Text, pass.Text, errCh))
 	})
 
 	return container.NewVBox(
@@ -36,27 +36,25 @@ func ConnectWindow(w fyne.Window, errCh chan error) fyne.CanvasObject {
 	)
 }
 
-func Connect(w fyne.Window, name string, pass string, errCh chan error) fyne.CanvasObject {
-	manager, ctx := client.SetUpClient()
-
-	resp, _ := manager.MakeConnectRequest(ctx, name, pass, errCh)
+func (ac *AppContainer) Connect(ctx context.Context, name string, pass string, errCh chan error) fyne.CanvasObject {
+	resp, _ := ac.clientManager.MakeConnectRequest(ctx, name, pass, errCh)
 
 	var modal *widget.PopUp
 	var label *widget.Label
 
 	answer := strings.Split(resp, " ")
 
-	if answer[0] == "success" {
+	if answer[0] == cmd.SuccessResponse {
 		label = widget.NewLabel("Соединение с сетью " + name + " было успешно установлено")
 		modal = widget.NewModalPopUp(
 			container.NewVBox(
 				label,
 				widget.NewButton("Закрыть", func() { modal.Hide() }),
 			),
-			w.Canvas(),
+			ac.window.Canvas(),
 		)
 		modal.Show()
-		return IPWindow(w, answer[1], name, pass, errCh)
+		return ac.IPWindow(ctx, answer[1], name, pass, errCh)
 
 	}
 
@@ -66,13 +64,13 @@ func Connect(w fyne.Window, name string, pass string, errCh chan error) fyne.Can
 			label,
 			widget.NewButton("Закрыть", func() { modal.Hide() }),
 		),
-		w.Canvas(),
+		ac.window.Canvas(),
 	)
 	modal.Show()
-	return MainWindow(w, errCh)
+	return ac.MainWindow(ctx, errCh)
 }
 
-func IPWindow(w fyne.Window, addr string, name string, pass string, errCh chan error) fyne.CanvasObject {
+func (ac *AppContainer) IPWindow(ctx context.Context, addr string, name string, pass string, errCh chan error) fyne.CanvasObject {
 	label1 := widget.NewLabel("Ваш адрес в сети: " + addr)
 	label2 := widget.NewLabel("Введите ip адрес другого пользователя данной сети.")
 	ip := widget.NewEntry()
@@ -81,7 +79,7 @@ func IPWindow(w fyne.Window, addr string, name string, pass string, errCh chan e
 		widget.NewFormItem("IP пользователя", ip),
 	)
 	btn := widget.NewButton("Отправить", func() {
-		w.SetContent(ChatWindow(w, addr, ip.Text, name, pass, errCh))
+		ac.window.SetContent(ac.ChatWindow(ctx, addr, ip.Text, name, pass, errCh))
 	})
 
 	return container.NewVBox(

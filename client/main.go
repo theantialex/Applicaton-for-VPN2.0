@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+	"vpn2.0/app/client/internal/client"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -27,7 +28,11 @@ func main() {
 	errCh := make(chan error)
 	go processError(a, w, errCh)
 
-	container := windows.MainWindow(w, errCh)
+	manager, ctx := client.SetUpClient()
+
+	clientApp := windows.NewAppContainer(w, manager)
+
+	container := clientApp.MainWindow(ctx, errCh)
 	w.SetContent(container)
 
 	w.ShowAndRun()
