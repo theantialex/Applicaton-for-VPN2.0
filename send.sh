@@ -1,3 +1,3 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 echo $1 | nc $2 $3 -w 2

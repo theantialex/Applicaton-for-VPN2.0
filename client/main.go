@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+
 	"vpn2.0/app/client/internal/client"
 
 	"fyne.io/fyne/v2"
@@ -14,7 +15,7 @@ import (
 )
 
 func RunScript() {
-	cmd := exec.Command("sh", "read.sh")
+	cmd := exec.Command("/bin/sh", "read.sh")
 	cmd.Start()
 }
 

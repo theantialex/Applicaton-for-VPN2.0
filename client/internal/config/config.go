@@ -5,7 +5,7 @@ import (
 )
 
 var PORT = "1234"
-var ADDR = "192.168.1.74"
+var ADDR = "192.168.1.28"
 
 // Config struct describes a config entity
 type Config struct {

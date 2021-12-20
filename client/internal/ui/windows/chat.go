@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+
 	"vpn2.0/app/client/internal/ui"
 
 	"fyne.io/fyne/v2"
@@ -38,7 +39,7 @@ func (ac *AppContainer) ChatWindow(ctx context.Context, addr string, ip string, 
 }
 
 func SendMessage(msg string, addr string, chat *widget.Entry) {
-	cmd := exec.Command("sh", "send.sh", msg, addr, config.PORT)
+	cmd := exec.Command("/bin/sh", "send.sh", msg, addr, config.PORT)
 	cmd.Start()
 	chat.SetText(chat.Text + "you: " + msg + "\n")
 }
